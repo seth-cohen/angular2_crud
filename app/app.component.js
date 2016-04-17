@@ -1,4 +1,4 @@
-(function(app) {
+define([], function() {
   var Address = 
     ng.core.Class({
       constructor: function(street, city, state, zip) {
@@ -25,7 +25,7 @@
       template: 'Lovie'
     })
     .Class({
-      constructor: function() {}
+      constructor: function() {},
     });
 
   app.UserListComponent = 
@@ -65,7 +65,7 @@
         ];
         this.isVisible = false;
       },
-      onChange : function(changes) { 
+      ngOnChanges: function(changes) { 
         console.log(changes);
       }
     });
@@ -106,4 +106,4 @@
         this.isUpdateVisible = true;
       }
     });
-})(window.app || (window.app = {}));
+});
