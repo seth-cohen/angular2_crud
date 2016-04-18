@@ -1,11 +1,10 @@
 <html>
   <head>
-    <title>Angular 2 QuickStart</title>
+    <title>Seth Cohen - Angular 2 Cyber Care</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
 
-    <!-- 1. Load libraries -->
-    <!-- IE required polyfill -->
+    <!-- global Angular 2 libraries -->
     <script src="node_modules/es6-shim/es6-shim.min.js"></script>
     <script src="node_modules/angular2/es6/dev/src/testing/shims_for_IE.js"></script>   
 
@@ -13,14 +12,12 @@
     <script src="node_modules/rxjs/bundles/Rx.umd.js"></script>
     <script src="node_modules/angular2/bundles/angular2-all.umd.js"></script>
 
-    <!-- 2. Load our 'modules' -->
+    <!-- requireJS entry point -->
     <script data-main="app/js/main.js" src="app/js/libs/require.js"></script>
-
   </head>
 
-  <!-- 3. Display the application -->
   <body>
-    <care-app>Loading...</care-app>
+    <care-app></care-app>
   </body>
 
 </html>
