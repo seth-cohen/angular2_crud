@@ -10,7 +10,6 @@ define([
   'components/user_update/user_update.component',
   'underscore'
 ], function(UserCreateComponent, UserListComponent, UserDeleteComponent, UserUpdateComponent, _) {
-
   var AppComponent = ng.core.Component({
     selector: 'care-app',
     template: `
@@ -28,11 +27,18 @@ define([
           <user-update [isVisible]="isUpdateVisible"></user-update>
         </div>
       `,
+    providers: [ng.http.HTTP_PROVIDERS],
     directives: [UserCreateComponent, UserListComponent, UserDeleteComponent, UserUpdateComponent]
   })
   .Class({
-    constructor: function() {
+    constructor: [ng.http.Http, function(http) {
       this.setVisible(false);
+      this.http = http;
+    }],
+    ngOnInit: function() {
+      this.http.get('/user').subscribe(function(res) {
+        console.log(res);
+      });
     },
     showCreate: function() {
       this.setVisible(this.CREATE_VIEW);
