@@ -8,67 +8,68 @@ define([
   'components/user_list/user_list.component',
   'components/user_delete/user_delete.component',
   'components/user_update/user_update.component',
+  'services/storage_selector.service',
   'underscore'
-], function(UserCreateComponent, UserListComponent, UserDeleteComponent, UserUpdateComponent, _) {
+], function(UserCreateComponent, UserListComponent, UserDeleteComponent, UserUpdateComponent, storageSelector, _) {
+  var useRemoteStorage = false;
   var AppComponent = ng.core.Component({
     selector: 'care-app',
     template: `
         <div class="col-xs-12">
-          <h1>CyberCare User CRUD Example</h1>
+          <h1>User CRUD SPA Example</h1>
+          <div class="well well-sm">
+            <a class="btn btn-default btn-sm" (click)="toggleStorage()">switch</a>
+            <span *ngIf="useRemoteStorage">Using Remote Storage: <br /> 
+              Ensure MySQL is running on server and you created the schema provided in a DB called cyber. 
+            </span>
+            <span *ngIf="!useRemoteStorage">Using localStorage</span>
+          </div>
           <div class="btn-group-horizontal">
             <input type="button" class="btn btn-default btn-lg" value="Create" (click)="showCreate()" />
             <input type="button" class="btn btn-default btn-lg" value="List" (click)="showList()"/>
             <input type="button" class="btn btn-default btn-lg" value="Delete" (click)="showDelete()" />
             <input type="button" class="btn btn-default btn-lg" value="Update" (click)="showUpdate()" />
           </div>
-          <user-create [isVisible]="isCreateVisible"></user-create>
-          <user-list [isVisible]="isListVisible"></user-list>
-          <user-delete [isVisible]="isDeleteVisible"></user-delete>
-          <user-update [isVisible]="isUpdateVisible"></user-update>
+          <router-outlet></router-outlet>
         </div>
       `,
-    providers: [ng.http.HTTP_PROVIDERS],
-    directives: [UserCreateComponent, UserListComponent, UserDeleteComponent, UserUpdateComponent]
+    providers: [ng.router.ROUTER_PROVIDERS, storageSelector],
+    directives: [UserCreateComponent, UserListComponent, UserDeleteComponent, UserUpdateComponent, ng.router.ROUTER_DIRECTIVES]
   })
   .Class({
-    constructor: [ng.http.Http, function(http) {
-      this.setVisible(false);
-      this.http = http;
+    constructor: [ng.router.Router, storageSelector, function(router, selector) {
+      window.router = this.router = router;
+      this.selector = selector;
+      this.useRemoteStorage = this.selector.useRemoteStorage;
     }],
-    ngOnInit: function() {
-      this.http.get('/user').subscribe(function(res) {
-        console.log(res);
-      });
-    },
+    
     showCreate: function() {
-      this.setVisible(this.CREATE_VIEW);
+      this.router.navigate(['Create']);
     },
     showList: function() {
-      console.log('showList');
-      this.setVisible(this.LIST_VIEW);
+      this.router.navigate(['List']);
     },
     showDelete: function() {
-      this.setVisible(this.DELETE_VIEW);
+      this.router.navigate(['Delete']);
     },
     showUpdate: function() {
-      this.setVisible(this.UPDATE_VIEW);
+      this.router.navigate(['Update']);
     },
-    ngOnChanges: function(changes) {
-      console.log(changes);
-    },
-    setVisible: function(visibleView) {
-      this.isCreateVisible = visibleView === this.CREATE_VIEW;
-      this.isListVisible = visibleView === this.LIST_VIEW;
-      this.isDeleteVisible = visibleView === this.DELETE_VIEW;
-      this.isUpdateVisible = visibleView === this.UPDATE_VIEW;
+    toggleStorage: function() {
+      this.useRemoteStorage = this.selector.toggleStorage();
+      this.router.navigateByInstruction(this.router.currentInstruction);
     }
   });
 
-  // Child Component constants
-  AppComponent.prototype.CREATE_VIEW = 1;
-  AppComponent.prototype.LIST_VIEW = 2;
-  AppComponent.prototype.DELETE_VIEW = 3;
-  AppComponent.prototype.UPDATE_VIEW = 4;
+  AppComponent = ng.router.RouteConfig([
+    {path: '/create', name: 'Create', component: UserCreateComponent},
+    {path: '/list', name: 'List', component: UserListComponent, useAsDefault: true},
+    {path: '/update', name: 'Update', component: UserUpdateComponent},
+    {path: '/update/:userID', name: 'UpdateUser', component: UserUpdateComponent},
+    {path: '/delete', name: 'Delete', component: UserDeleteComponent},
+    {path: '/delete/:userID', name: 'DeleteUser', component: UserDeleteComponent}
+  ])(AppComponent);
 
-  return ng.platform.browser.bootstrap(AppComponent);
+  // Let's bootstrap the application
+  return ng.platform.browser.bootstrap(AppComponent, [ng.router.ROUTER_PROVIDERS, ng.http.HTTP_PROVIDERS, storageSelector]);
 });

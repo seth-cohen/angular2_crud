@@ -1,4 +1,8 @@
 /*
+ * Seth Cohen <seth.h.cohen@gmail.com>
+ */
+
+/*
  * Component for a reusable confirmation modal
  *
  * Seth Cohen <seth.h.cohen@gmail.com>
@@ -51,9 +55,6 @@ define([], function() {
       this.message = 'Are you sure?';
       this.confirmed = new ng.core.EventEmitter();
       this.closeModal = new ng.core.EventEmitter();
-    },
-    ngOnChanges: function(changes) {
-      console.log(changes);
     },
 
     /**

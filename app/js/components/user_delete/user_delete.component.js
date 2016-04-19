@@ -9,16 +9,19 @@
  */
 define([
   '../../services/user.service',
+  '../../services/user_mysql.service',
+  '../../services/storage_selector.service',
   '../../models/user',
   '../modal/confirmation_modal.component'
-], function(userService, User, ConfirmModal) {
+], function(userService, userMySQLService, storageSelector, User, ConfirmModal) {
   var UserDeleteComponent = ng.core.Component({
     selector: 'user-delete',
     template: `
-        <div [class.hidden]="!isVisible" class="container">
+        <div class="container">
           <form>
             <h3>Delete User (Enter User ID)</h3>
             <h4 *ngIf="deleteSuccessful">You asked for it. {{deletedUser}} was just deleted</h4>
+            <h4 *ngIf="deleteFailed">Awe snap! Error deleting {{user.firstName}}.</h4>
             <div class="form-group">
               <label for="user_id">User ID</label>
               <input [(ngModel)]="userID" name="user_id" type="number" 
@@ -41,33 +44,45 @@ define([
               <span class="col-xs-3 text-right">Address:</span> 
               <span class="col-xs-9">{{user.address.street}} {{user.address.city}}, {{user.address.state}} {{user.address.zip}}</span>
             </div>
-              
           </div>
+          <div *ngIf="!validUser() && userID" class="text-center">No User with id = {{userID}}</div>
         </div>
       `,
-    inputs: ['isVisible'],
-    providers: [userService],
+    providers: [userService, userMySQLService],
     directives: [ConfirmModal]
   })
   .Class({
-    constructor: [userService, function(users) {
+    constructor: [userService, userMySQLService, storageSelector, function(users, usersMySQL, selector) {
+      this.selector = selector;
       this.userService = users;
+      this.userMySQLService = usersMySQL;
       this.userID = '';
       this.user = new User();
-      this.isVisible = false;
       this.deletedUser = '';
       this.deleteSuccessful = false;
+      this.deleteFailed = false;
 
       // Confirm Modal inputs
       this.showModal = false;
       this.confirmTitle = 'Confirm Delete';
       this.confirmMessage = 'Are you sure you want to delete this user?';
     }],
-    ngOnChanges: function(changes) {
-      // If we changed the visibility we should wipe out the
-      if (typeof changes.isVisible === 'object' &&  changes.isVisible.currentValue === true) {
-        this.deleteSuccessful = false;
+
+    routerOnActivate: function(inst) {
+      var userID = inst.params.userID;
+      if (userID) {
+        this.userID = userID;
+        this.user.set(this.getUser(this.userID));
       }
+    },
+
+    routerOnDeactivate: function() {
+      this.userID = 0;
+      this.user.set({});
+    },
+
+    routerCanReuse: function() {
+      return false;
     },
 
     /**
@@ -85,7 +100,28 @@ define([
      * @param {object} e The event object
      */
     onChange: function(e) {
-      this.user.set(this.userService.get(this.userID));
+      this.user.set(this.getUser(this.userID));
+    },
+
+    /**
+     * Get the user from the appropriate storage
+     *
+     * @param {number} userID ID of the user to retrieve
+     */
+    getUser: function(userID) {
+      if (userID) {
+        this.userID = userID;
+        if (this.selector.useRemoteStorage) {
+          var self = this;
+          this.userMySQLService.get(this.userID).subscribe(
+            function(res) {
+              self.user.set(res);
+            }
+          );
+        } else {
+          this.user.set(this.userService.get(this.userID));
+        }
+      }
     },
 
     /**
@@ -117,14 +153,42 @@ define([
      */
     onModalConfirm: function(e) {
       if (e === true) {
-        if (this.userService.delete(this.user.userID)) {
-          this.deleteSuccessful = true;
-          this.deletedUser = this.user.firstName + ' ' + this.user.lastName;
-          this.user.set({});
-          this.userID = '';
+        var self = this;
+        if (this.selector.useRemoteStorage) {
+          this.userMySQLService.delete(this.user.userID).subscribe(
+            function(res) {
+              self.processDeleteResponse(res);
+            }
+          );
+        } else {
+          var deleteResult = false;
+          if (this.userService.delete(this.user.userID)) {
+            deleteResult = true;
+          }
+          self.processDeleteResponse(deleteResult);
         }
+        this.confirmMessage = 'Deleting ...';
+      } else {
+        this.showModal = false;
+      }
+    },
+
+    /**
+     * Handle the response from the user service
+     *
+     * @param {object} deleteResponse Response from the user service
+     */
+    processDeleteResponse: function(deleteResponse) {
+      if (deleteResponse) {
+        this.deleteSuccessful = true;
+        this.deletedUser = this.user.firstName + ' ' + this.user.lastName;
+        this.user.set({});
+        this.userID = '';
+      } else {
+        this.deleteFailed = true;
       }
       this.showModal = false;
+      this.confirmMessage = 'Are you sure you want to delete this user?';
     }
   });
 

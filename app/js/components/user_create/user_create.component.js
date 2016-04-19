@@ -5,15 +5,19 @@
  */
 define([
   '../../services/user.service',
+  '../../services/user_mysql.service',
+  '../../services/storage_selector.service',
   '../../models/user'
-], function(userService, User) {
+], function(userService, userMySQLService, storageSelector, User) {
   var UserCreateComponent = ng.core.Component({
     selector: 'user-create',
     template: `
-        <div [class.hidden]="!isVisible" class="container">
+        <div class="container">
           <form>
             <h3>User Details</h3>
             <h4 *ngIf="saveSuccessful">Congratulations {{savedUser}} was just saved</h4>
+            <h4 *ngIf="saveFailed">Awe snap! Error saving {{user.firstName}}.</h4>
+            <button type="submit" class="btn btn-default" (click)="onSubmit($event)">Submit</button>
             <div class="form-group">
               <label for="first_name">First Name:</label>
               <input [(ngModel)]="user.firstName" name="first_name" type="text" class="form-control" required>
@@ -45,29 +49,26 @@ define([
             </div>
             <div class="form-group">
               <label for="zip">Zip:</label>
-              <input [(ngModel)]="user.address.zip" name="state" type="text" class="form-control" required>
+              <input [(ngModel)]="user.address.zip" name="zip" type="text" class="form-control" required>
             </div>
-            <button type="submit" class="btn btn-default" (click)="onSubmit($event)">Submit</button>
           </form>
         </div>
       `,
-    inputs: ['isVisible'],
-    providers: [userService]
+    providers: [userService, userMySQLService]
   })
   .Class({
-    constructor: [userService, function(users) {
+    constructor: [userService, userMySQLService, storageSelector, function(users, usersMySQL, selector) {
+      this.selector = selector;
       this.userService = users;
+      this.userMySQLService = usersMySQL;
       this.user = new User();
-      this.isVisible = false;
       this.savedUser = '';
       this.saveSuccessful = false;
+      this.saveFailed = false;
     }],
-    ngOnChanges: function(changes) {
-      // If we changed the visibility we should wipe out the
-      if (typeof changes.isVisible === 'object' &&  changes.isVisible.currentValue === true) {
-        this.saveSuccessful = false;
 
-      }
+    routerCanReuse: function() {
+      return false;
     },
 
     /**
@@ -78,11 +79,35 @@ define([
     onSubmit: function(e) {
       e.preventDefault();
       if (this.user.isValid()) {
-        if (this.userService.create(this.user)) {
-          this.saveSuccessful = true;
-          this.savedUser = this.user.firstName + ' ' + this.user.lastName;;
-          this.user.set({});
+        var self = this;
+        if (this.selector.useRemoteStorage) {
+          this.userMySQLService.create(this.user).subscribe(
+            function(res) {
+              self.processSaveResponse(res);
+            }
+          );
+        } else {
+          var saveResult = false;
+          if (this.userService.create(this.user)) {
+            saveResult = true;
+          }
+          self.processSaveResponse(saveResult);
         }
+      }
+    },
+
+    /**
+     * Handle the response from the user service
+     *
+     * @param {object} createResponse Response from the user service
+     */
+    processSaveResponse: function(createResponse) {
+      if (createResponse) {
+        this.saveSuccessful = true;
+        this.savedUser = this.user.firstName + ' ' + this.user.lastName;
+        this.user.set({});
+      } else {
+        this.saveFailed = true;
       }
     }
   });

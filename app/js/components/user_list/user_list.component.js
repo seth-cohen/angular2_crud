@@ -9,10 +9,12 @@
  */
 define([
   '../../services/user.service',
+  '../../services/user_mysql.service',
+  '../../services/storage_selector.service',
   '../../models/user',
   '../../models/address',
   'underscore'
-], function(userService, User, Address, _) {
+], function(userService, userMySQLService, storageSelector, User, Address, _) {
 
   var UserListComponent = ng.core.Component({
     selector: 'user-list',
@@ -26,7 +28,7 @@ define([
       }
     `],
     template: `
-        <div [class.hidden]="!isVisible">
+        <div class="container">
           <h3>All Users</h3>
           <table class="table table-condensed table-bordered">
           <thead>
@@ -39,7 +41,7 @@ define([
           </thead>
           <tbody *ngIf="!users.length">
             <tr>
-              <td colspan="4">No Users - Why Not Create Some</td>
+              <td colspan="4">No Users - Why Not <a [routerLink]="['Create']">Create</a> Some</td>
             </tr>
           </tbody>
           <tbody *ngFor="#user of users">
@@ -51,32 +53,42 @@ define([
             </tr>
             <tr>
               <td colspan="4" *ngIf="user.address"> 
-                <span class="col-xs-3">Address:</span> 
-                <span class="col-xs-6">{{user.address.street}} {{user.address.city}}, {{user.address.state}} {{user.address.zip}}</span>
+                <span class="col-xs-2">Address:</span> 
+                <span class="col-xs-7">{{user.address.street}} {{user.address.city}}, {{user.address.state}} {{user.address.zip}}</span>
+                <a class="btn btn-warning" [routerLink]="['UpdateUser', {userID: user.userID }]">update</a>
+                <a class="btn btn-danger" [routerLink]="['DeleteUser', {userID: user.userID }]">delete</a>
               </td>
             </tr>
           </tbody>
           </table>
         </div>
       `,
-    inputs: ['isVisible'],
-    providers: [userService]
+    providers: [userService, userMySQLService],
+    directives: [ng.router.ROUTER_DIRECTIVES]
   })
   .Class({
-    constructor: [userService, function(users) {
+    constructor: [userService, userMySQLService, storageSelector, function(users, usersMySQL, selector) {
+      this.selector = selector;
       this.userService = users;
+      this.userMySQLService = usersMySQL;
       this.users = [];
       this.hasUsers = false;
-      this.isVisible = false;
     }],
     ngOnInit: function() {
-      this.setUsers(this.userService.getAll());
-    },
-    ngOnChanges: function(changes) {
-      // If we changed the visibility we should reload the users fromt the service
-      if (typeof changes.isVisible === 'object' &&  changes.isVisible.currentValue === true) {
+      if (this.selector.useRemoteStorage) {
+        var self = this;
+        this.userMySQLService.getAll().subscribe(
+          function(res) {
+            self.setUsers(res);
+          }
+        );
+      } else {
         this.setUsers(this.userService.getAll());
       }
+    },
+
+    routerCanReuse: function() {
+      return false;
     },
 
     /**
