@@ -7,8 +7,9 @@ CREATE TABLE `tblAddress` (
   `State` varchar(256) NOT NULL DEFAULT '''''',
   `Zip` varchar(10) NOT NULL DEFAULT '''''',
   PRIMARY KEY (`AddressID`),
-  CONSTRAINT `FK_UserID_tblUser_UserID` FOREIGN KEY (`AddressID`) REFERENCES `tblUser` (`UserID`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  KEY `UserID` (`UserID`),
+  CONSTRAINT `tbladdress_ibfk_1` FOREIGN KEY (`UserID`) REFERENCES `tblUser` (`UserID`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=latin1;
 
 CREATE TABLE `tblUser` (
   `UserID` int(11) unsigned NOT NULL AUTO_INCREMENT,
