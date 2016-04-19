@@ -17,7 +17,7 @@ define([
             <h3>User Details</h3>
             <h4 *ngIf="saveSuccessful">Congratulations {{savedUser}} was just saved</h4>
             <h4 *ngIf="saveFailed">Awe snap! Error saving {{user.firstName}}.</h4>
-            <button type="submit" class="btn btn-default" (click)="onSubmit($event)">Submit</button>
+            <input type="submit" class="btn btn-default" (click)="onSubmit($event)" value="Create">
             <div class="form-group">
               <label for="first_name">First Name:</label>
               <input [(ngModel)]="user.firstName" name="first_name" type="text" class="form-control" required>
@@ -77,7 +77,6 @@ define([
      * @param {object} e The event object
      */
     onSubmit: function(e) {
-      e.preventDefault();
       if (this.user.isValid()) {
         var self = this;
         if (this.selector.useRemoteStorage) {
