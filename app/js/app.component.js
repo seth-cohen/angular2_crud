@@ -19,16 +19,16 @@ define([
           <h1>User CRUD SPA Example</h1>
           <div class="well well-sm">
             <a class="btn btn-default btn-sm" (click)="toggleStorage()">switch</a>
-            <span *ngIf="useRemoteStorage">Using Remote Storage: <br /> 
-              Ensure MySQL is running on server and you created the schema provided in a DB called cyber. 
+            <span *ngIf="useRemoteStorage">Using Remote Storage: <br />
+              Ensure MySQL is running on server and you created the schema provided in a DB called cyber.
             </span>
             <span *ngIf="!useRemoteStorage">Using localStorage</span>
           </div>
           <div class="btn-group-horizontal">
-            <input type="button" class="btn btn-default btn-lg" value="Create" (click)="showCreate()" />
-            <input type="button" class="btn btn-default btn-lg" value="List" (click)="showList()"/>
-            <input type="button" class="btn btn-default btn-lg" value="Delete" (click)="showDelete()" />
-            <input type="button" class="btn btn-default btn-lg" value="Update" (click)="showUpdate()" />
+            <input type="button" class="btn btn-default btn-lg" value="Create" [routerLink]="['./Create']" />
+            <input type="button" class="btn btn-default btn-lg" value="List" [routerLink]="['./List']" />
+            <input type="button" class="btn btn-default btn-lg" value="Delete" [routerLink]="['./Delete']" />
+            <input type="button" class="btn btn-default btn-lg" value="Update" [routerLink]="['./Update']" />
           </div>
           <router-outlet></router-outlet>
         </div>
@@ -42,19 +42,7 @@ define([
       this.selector = selector;
       this.useRemoteStorage = this.selector.useRemoteStorage;
     }],
-    
-    showCreate: function() {
-      this.router.navigate(['Create']);
-    },
-    showList: function() {
-      this.router.navigate(['List']);
-    },
-    showDelete: function() {
-      this.router.navigate(['Delete']);
-    },
-    showUpdate: function() {
-      this.router.navigate(['Update']);
-    },
+
     toggleStorage: function() {
       this.useRemoteStorage = this.selector.toggleStorage();
       this.router.navigateByInstruction(this.router.currentInstruction);
